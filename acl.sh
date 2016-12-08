@@ -162,7 +162,11 @@ do
 	    
 	"Удалить запись")
 	    choose_u_or_g
-	    setfacl -x $choice_u_or_g:$name: $file_name
+	    if test "$ch" = f; then
+		setfacl -x $choice_u_or_g:$name: $file_name
+	    else
+		setfacl -R -x $choice_u_or_g:$name: $file_name
+	    fi
 	    echo "Запись удалена"
 	    echo " "
 	    ;;

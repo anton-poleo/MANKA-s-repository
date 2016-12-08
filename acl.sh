@@ -49,12 +49,12 @@ do
 	    while :
 	    do
 		echo "Добавить право на чтение? (y/n)"
-		read answ
-		if test "$answ" = y; then
+		read answ1
+		if test "$answ1" = y; then
 		    setfacl -m "$choice_u_or_g:$name:r" $file_name
 		    echo "Добавлено право на чтение"
 		    break
-		elif test "$answ" = n; then
+		elif test "$answ1" = n; then
 		    break
 		else
 		    echo "Вы ввели неверную букву. Попробуйте еще раз!"
@@ -64,12 +64,16 @@ do
 	    while :
 	    do
 		echo "Добавить право на запись? (y/n)"
-		read answ
-		if test "$answ" = y; then
-		    setfacl -m "$choice_u_or_g:$name:w" $file_name
+		read answ2
+		if test "$answ2" = y; then
+		    if test "$answ1" = y; then
+			setfacl -m "$choice_u_or_g:$name:rw" $file_name
+		    else
+			setfacl -m "$choice_u_or_g:$name:w" $file_name
+		    fi
 		    echo "Добавлено право на запись"
 		    break
-		elif test "$answ" = n; then
+		elif test "$answ2" = n; then
 		    break
 		else
 		    echo "Вы ввели неверную букву. Попробуйте еще раз!"
@@ -79,12 +83,24 @@ do
 	    while :
 	    do
 		echo "Добавить право на исполнение? (y/n)"
-		read answ
-		if test "$answ" = y; then
-		    setfacl -m "$choice_u_or_g:$name:x" $file_name
+		read answ3
+		if test "$answ3" = y; then
+		    if test "$answ2" = y; then
+			if test "$answ1" = y; then
+			    setfacl -m "$choice_u_or_g:$name:rwx" $file_name
+			else
+			    setfacl -m "$choice_u_or_g:$name:wx" $file_name
+			fi
+		    else
+			if test "$answ1" = y; then
+			    setfacl -m "$choice_u_or_g:$name:rx" $file_name
+			else
+			    setfacl -m "$choice_u_or_g:$name:x" $file_name
+			fi
+		    fi
 		    echo "Добавлено право на исполнение"
 		    break
-		elif test "$answ" = n; then
+		elif test "$answ3" = n; then
 		    break
 		else
 		    echo "Вы ввели неверную букву. Попробуйте еще раз!"

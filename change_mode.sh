@@ -23,7 +23,7 @@ OPTIONS_MODE=(
 recursively_or_not(){
 	#рекурсивное применение изменений - возвращает 0, иначе - возвращает 1
 	echo "Вы ввели путь к каталогу. Изменить права у всех файлов внутри него? y/n " 
-    read a
+	read a
     if [[ $a == "Y" || $a == "y" ]]; then
 		return 0
 	else
@@ -32,6 +32,7 @@ recursively_or_not(){
 }
 
 choose_mode(){
+	local err=0
 	echo
 	if [[ "$mode" == "u" ]]; then
 		echo "Изменение прав доступа к файлу "$2" для владельца"
@@ -101,80 +102,57 @@ choose_mode(){
 	if [[ err -eq 1 ]]; then
 		choose_mode $1 $2
 	else
-		change_mode "$mode" $2
+		change_mode $mode $2
 	fi
 }
 
 change_mode(){
-	mode=$1
-	filename=$2
-	if [[ -f $filename ]]; then
-		chmod $mode $filename
+	if [[ -f $2 ]]; then
+		chmod $1 $2
 		exit_code=$?
 	else
 		recursively_or_not
 		if [[ $? -eq 0 ]]; then
-			chmod -R $mode $filename
+			chmod -R $1 $2
 			exit_code=$?
 		else
-			chmod $mode $filename
+			chmod $1 $2
 			exit_code=$?
 		fi
 	fi
 	if [[ exit_code -ne 0 ]]; then
-		echo "Не получилось изменить права для файла "$filename>&2
+		echo "Не получилось изменить права для файла "$2>&2
 	else
-		echo "Права доступа для файла "$filename" были изменены"
+		echo "Права доступа для файла "$2" были изменены"
 	fi
 }
 
-q=0
-while [ $q -ne 1 ] 
+while :
 do
-	if [[ $# -ne 1 ]]; then
-		echo "Введите имя файла"
-		echo "(q - вернуться в главное меню)"
-		read -e filename
-	else
-		filename=$1
-	fi
-	if [[ -f $filename || -d $filename ]]; then
-		while :
-		do
-			echo
-			echo "Изменение прав доступа для файла "$filename
-			for opt in "${OPTIONS[@]}"
-			do
-				echo $opt
-			done
-			read REPLY
-			case $REPLY in
-				"1")#user
-					mode="u"
-				;;
-				"2")#group
-					mode="g"
-				;;
-				"3")#others
-					mode="o"
-				;;
-				"4")#all
-					mode="a"
-				;;
-				q) let "q = 1"
-					break;;
-				*) echo "Неверный ввод!">&2
-					continue
-				;;
-			esac
-			choose_mode "$mode" "$filename"
-		done
-	else
-		if [[ $filename != "q" ]]; then
-			echo "Файл "$filename" не найден">&2
-			echo
-		else
-			break
-		fi
-	fi
-done
+	echo
+	echo "Изменение прав доступа для файла "$1
+	for opt in "${OPTIONS[@]}"
+	do
+		echo $opt
+	done
+	read REPLY
+	case $REPLY in
+	"1")#user
+		mode="u"
+		;;
+	"2")#group
+		mode="g"
+		;;
+	"3")#others
+		mode="o"
+		;;
+	"4")#all
+		mode="a"
+		;;
+	q) break;;
+	*) echo "Неверный ввод!">&2
+		continue
+		;;
+	esac
+	choose_mode $mode $1
+done	

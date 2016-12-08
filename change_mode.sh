@@ -20,30 +20,20 @@ OPTIONS_MODE=(
 	"q. Вернуться назад"
 )
 
-recursively_or_not(){
-	#рекурсивное применение изменений - возвращает 0, иначе - возвращает 1
-	echo "Вы ввели путь к каталогу. Изменить права у всех файлов внутри него? y/n " 
-    read a
-    if [[ $a == "Y" || $a == "y" ]]; then
-		return 0
-	else
-		return 1
-	fi
-}
-
 choose_mode(){
+	local err=0
 	echo
-	if [[ "$mode" == "u" ]]; then
+	if [[ "$mode" == *u ]]; then
 		echo "Изменение прав доступа к файлу "$2" для владельца"
-	elif [[ "$mode" == "g" ]]; then
+	elif [[ "$mode" == *g ]]; then
 		echo "Изменение прав доступа к файлу "$2" для группы"
-	elif [[ "$mode" == "o" ]]; then
+	elif [[ "$mode" == *o ]]; then
 		echo "Изменение прав доступа к файлу "$2" для остальных"
 	else
 		echo "Изменение прав доступа к файлу "$2" для всех"				  
 	fi
 	local i=0
-	if [[ "$mode" == "u" || "$mode" == "g" ]]; then
+	if [[ "$mode" == *u || "$mode" == *g ]]; then
 		while [ "$i" -lt 9 ]
 		do
 			echo ${OPTIONS_MODE[i]}
@@ -78,7 +68,7 @@ choose_mode(){
 			mode=$1"-x"
 		;;
 		"7")#+s
-			if [[ "$mode" == "u" || "$mode" == "g" ]]; then
+			if [[ "$mode" == *u || "$mode" == *g ]]; then
 				mode=$1"+s"
 			else
 				echo "Неверный ввод!">&2
@@ -86,7 +76,7 @@ choose_mode(){
 			fi
 		;;
 		"8")#-s
-			if [[ "$mode" == "u" || "$mode" == "g" ]]; then
+			if [[ "$mode" == *u || "$mode" == *g ]]; then
 				mode=$1"-s"
 			else
 				echo "Неверный ввод!">&2
@@ -99,82 +89,52 @@ choose_mode(){
 		;;
 	esac
 	if [[ err -eq 1 ]]; then
-		choose_mode $1 $2
+		choose_mode "$1" $2
 	else
 		change_mode "$mode" $2
 	fi
 }
 
 change_mode(){
-	mode=$1
-	filename=$2
-	if [[ -f $filename ]]; then
-		chmod $mode $filename
-		exit_code=$?
-	else
-		recursively_or_not
-		if [[ $? -eq 0 ]]; then
-			chmod -R $mode $filename
-			exit_code=$?
-		else
-			chmod $mode $filename
-			exit_code=$?
-		fi
-	fi
+	chmod $1 $2
+	exit_code=$?
 	if [[ exit_code -ne 0 ]]; then
-		echo "Не получилось изменить права для файла "$filename>&2
+		echo "Не получилось изменить права для файла "$2>&2
 	else
-		echo "Права доступа для файла "$filename" были изменены"
+		echo "Права доступа для файла "$2" были изменены"
 	fi
 }
 
-q=0
-while [ $q -ne 1 ] 
+while :
 do
-	if [[ $# -ne 1 ]]; then
-		echo "Введите имя файла"
-		echo "(q - вернуться в главное меню)"
-		read -e filename
-	else
-		filename=$1
+	mode=""
+	if [[ $# -eq 2 ]]; then
+		mode="-R "
 	fi
-	if [[ -f $filename || -d $filename ]]; then
-		while :
-		do
-			echo
-			echo "Изменение прав доступа для файла "$filename
-			for opt in "${OPTIONS[@]}"
-			do
-				echo $opt
-			done
-			read REPLY
-			case $REPLY in
-				"1")#user
-					mode="u"
-				;;
-				"2")#group
-					mode="g"
-				;;
-				"3")#others
-					mode="o"
-				;;
-				"4")#all
-					mode="a"
-				;;
-				q) let "q = 1"
-					break;;
-				*) echo "Неверный ввод!">&2
-					continue
-				;;
-			esac
-			choose_mode "$mode" "$filename"
-		done
-	else
-		if [[ $filename != "q" ]]; then
-			echo "Файл "$filename" не найден">&2
-			echo
-		else
-			break
-		fi
-	fi
-done
+	echo
+	echo "Изменение прав доступа для файла "$1
+	for opt in "${OPTIONS[@]}"
+	do
+		echo $opt
+	done
+	read REPLY
+	case $REPLY in
+	"1")#user
+		mode=$mode"u"
+		;;
+	"2")#group
+		mode=$mode"g"
+		;;
+	"3")#others
+		mode=$mode"o"
+		;;
+	"4")#all
+		mode=$mode"a"
+		;;
+	q) break;;
+	*) echo "Неверный ввод!">&2
+		continue
+		;;
+	esac
+	choose_mode "$mode" $1
+done	

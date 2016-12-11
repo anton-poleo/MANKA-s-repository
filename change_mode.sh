@@ -20,20 +20,31 @@ OPTIONS_MODE=(
 	"q. Вернуться назад"
 )
 
+recursively_or_not(){
+	#рекурсивное применение изменений - возвращает 0, иначе - возвращает 1
+	echo "Вы ввели путь к каталогу. Изменить права у всех файлов внутри него? y/n " 
+	read a
+    if [[ $a == "Y" || $a == "y" ]]; then
+		return 0
+	else
+		return 1
+	fi
+}
+
 choose_mode(){
 	local err=0
 	echo
-	if [[ "$mode" == *u ]]; then
+	if [[ "$mode" == "u" ]]; then
 		echo "Изменение прав доступа к файлу "$2" для владельца"
-	elif [[ "$mode" == *g ]]; then
+	elif [[ "$mode" == "g" ]]; then
 		echo "Изменение прав доступа к файлу "$2" для группы"
-	elif [[ "$mode" == *o ]]; then
+	elif [[ "$mode" == "o" ]]; then
 		echo "Изменение прав доступа к файлу "$2" для остальных"
 	else
 		echo "Изменение прав доступа к файлу "$2" для всех"				  
 	fi
 	local i=0
-	if [[ "$mode" == *u || "$mode" == *g ]]; then
+	if [[ "$mode" == "u" || "$mode" == "g" ]]; then
 		while [ "$i" -lt 9 ]
 		do
 			echo ${OPTIONS_MODE[i]}
@@ -68,7 +79,7 @@ choose_mode(){
 			mode=$1"-x"
 		;;
 		"7")#+s
-			if [[ "$mode" == *u || "$mode" == *g ]]; then
+			if [[ "$mode" == "u" || "$mode" == "g" ]]; then
 				mode=$1"+s"
 			else
 				echo "Неверный ввод!">&2
@@ -76,7 +87,7 @@ choose_mode(){
 			fi
 		;;
 		"8")#-s
-			if [[ "$mode" == *u || "$mode" == *g ]]; then
+			if [[ "$mode" == "u" || "$mode" == "g" ]]; then
 				mode=$1"-s"
 			else
 				echo "Неверный ввод!">&2
@@ -89,15 +100,26 @@ choose_mode(){
 		;;
 	esac
 	if [[ err -eq 1 ]]; then
-		choose_mode "$1" $2
+		choose_mode $1 $2
 	else
-		change_mode "$mode" $2
+		change_mode $mode $2
 	fi
 }
 
 change_mode(){
-	chmod $1 $2
-	exit_code=$?
+	if [[ -f $2 ]]; then
+		chmod $1 $2
+		exit_code=$?
+	else
+		recursively_or_not
+		if [[ $? -eq 0 ]]; then
+			chmod -R $1 $2
+			exit_code=$?
+		else
+			chmod $1 $2
+			exit_code=$?
+		fi
+	fi
 	if [[ exit_code -ne 0 ]]; then
 		echo "Не получилось изменить права для файла "$2>&2
 	else
@@ -107,10 +129,6 @@ change_mode(){
 
 while :
 do
-	mode=""
-	if [[ $# -eq 2 ]]; then
-		mode="-R "
-	fi
 	echo
 	echo "Изменение прав доступа для файла "$1
 	for opt in "${OPTIONS[@]}"
@@ -120,21 +138,21 @@ do
 	read REPLY
 	case $REPLY in
 	"1")#user
-		mode=$mode"u"
+		mode="u"
 		;;
 	"2")#group
-		mode=$mode"g"
+		mode="g"
 		;;
 	"3")#others
-		mode=$mode"o"
+		mode="o"
 		;;
 	"4")#all
-		mode=$mode"a"
+		mode="a"
 		;;
 	q) break;;
 	*) echo "Неверный ввод!">&2
 		continue
 		;;
 	esac
-	choose_mode "$mode" $1
+	choose_mode $mode $1
 done	

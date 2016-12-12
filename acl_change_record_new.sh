@@ -31,56 +31,120 @@ SetRights() {
 while :
 do
 	echo "Введите название файла:"
-	read FileName
-	# FileName = "$1"
-	if ! [ -f $FileName ]; then
-		echo "Файл не существует!">&2
-
-	else
-		SetRights
-		while :
-		do
-			echo "Пользователь или группа?(user/group)"
-                read choice
-	        case "$choice" in
+	#read FileName
+	FileName="$1"
+	SetRights
+	while :
+	do
+		echo "Пользователь или группа?(user/group)"
+        read choice
+	    case "$choice" in
 				user)
 					while :
-				        do
+				    do
 						echo "Введите имя пользователя:"
-		                                read UserName
-			                        grep "$UserName" /etc/passwd >/dev/null
-			                        if [ $? -ne 0 ]; then
+		                read UserName
+			            grep "$UserName" /etc/passwd >/dev/null
+			            if [ $? -ne 0 ]; then
 							echo "Пользователь $UserName не существует!">&2
-			                        else
-							echo "Старые права доступа:"
+			            else
+							if [ -d $FileName ];
+							then
+								echo "Хотите изменить рекурсивно? (да/нет)"
+							    while :
+								do
+									read ans
+								    if [ "$ans" == "нет" ] ; 
+									then
+										q=1
+								        echo "Старые права доступа:"
 				                        getfacl $FileName
-		                                        setfacl -m u:$UserName:$Rights $FileName
-		                                        echo "Новые права доспута:"
-		                                        getfacl $FileName
-						    break
+		                                setfacl -m u:$UserName:$Rights $FileName
+		                                echo "Новые права доступа:"
+		                                getfacl $FileName
+										break
+								    elif [ "$ans" ==  "да" ] ; 
+									then
+									     q=1
+										 echo "Старые права доступа:"
+										 getfacl -R $FileName
+										 setfacl -R -m u:$UserName:$Rights $FileName
+										 echo "Новые права доступа:"
+										 getfacl -R $FileName
+										 break
+									else
+										 echo "Ошибка!">&2
+										 echo "Хотите изменить рекурсивно? (да/нет)"
+									 fi
+								done
+						    else
+								echo "Старые права доступа:"
+								getfacl $FileName
+							    setfacl -m u:$UserName: $Rights $FileName
+								echo "Новые права доступа:"
+								getfacl $FileName
+								break
+							fi
+							if [ "$q" == 1 ]; then
+								break
+							fi
 						fi
-					done
-					break
-					;;
+				  done
+				  break
+				  ;;
 				group)
 					while :
 					do
 						echo "Введите имя группы:"
-		     	                        read GroupName
-			                        grep -q -E "^$GroupName:" /etc/group >/dev/null
-		                                if [ $? -ne 0 ]; then
+		     	        read GroupName
+			            grep -q -E "^$GroupName:" /etc/group >/dev/null
+		                if [ $? -ne 0 ]; then
 							echo "Группа $GroupName не существует!">&2
-			                        else
-							echo "Старые права доступа:"
-		                                        getfacl $FileName
-		                                        setfacl -m g:$GroupName:$Rights $FileName
-		                                        echo "Новые права доспута:"
-	                                                getfacl $FileName
-						    break
-						fi
-					done
-					break
-					;;
+			            else
+							if [ -d $FileName ];
+							then
+								echo "Хотите изменить рекурсивно? (да/нет)"
+							    while :
+								do
+									read ans
+									if [ "$ans" == "нет" ] ;
+									then
+										q=1
+										echo "Старые права доступа:"
+		                                getfacl $FileName
+		                                setfacl -m g:$GroupName:$Rights $FileName
+		                                echo "Новые права доспута:"
+	                                    getfacl $FileName
+										break
+						            elif [ "$ans" ==  "да" ] ;
+						            then
+										q=1
+								        echo "Старые права доступа:"
+								        getfacl -R $FileName
+									    setfacl -R -m g:$UserName:$Rights $FileName
+									    echo "Новые права доступа:"
+									    getfacl -R $FileName
+									    break
+							         else
+									    echo "Ошибка!">&2
+									    echo "Хотите изменить рекурсивно? (да/нет)"
+									 fi
+							    done
+							else
+								echo "Старые права доступа:"
+								getfacl $FileName
+							    setfacl -m g:$UserName: $Rights $FileName
+							    echo "Новые права доступа:"
+							    getfacl $FileName
+								break
+						    fi
+					        if [ "$q" == 1 ]; then
+								break
+						    fi
+					   fi
+				  done
+			      break
+			      ;;
 				*) 
 				echo "Неверный ввод!">&2
 				continue
@@ -88,5 +152,4 @@ do
 	    	esac
 	done
 	break
-    fi
 done
